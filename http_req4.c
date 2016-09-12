@@ -40,19 +40,8 @@ int main(int argc, char *argv[])
     websrv_addr.sin_port = htons(my_portno);
     if(connect(mysrv_sock,(struct sockaddr *) &websrv_addr,sizeof(websrv_addr)) < 0)
         error("ERROR connecting");
-    //printf("Please enter the message: ");
 
-    //bzero(buffer,256);
-    //fgets(buffer,255,stdin);
     n = write(mysrv_sock,"GET / \n",strlen("GET / \n"));
-
-/*
-    strcpy(head_req, "HEAD /");
-    strcat(head_req, argv[1]);
-    strcat(head_req," HTTP/1.0"); */
-
-    //NEED TO FIND OUT WHY HEAD METHOD WON'T WORK!!!!!!!
-    // h_only = write(mysrv_sock,head_req,strlen(head_req));
 
     if (n < 0)
          error("ERROR writing to socket");
@@ -62,9 +51,6 @@ int main(int argc, char *argv[])
 
     if (fp!= NULL)
     {
-      //fprintf(fp,"Error opening file\n");
-      //fputs(buffer,fp);fprint
-
           while((n = read(mysrv_sock,buffer,sizeof(buffer))) != 0){
 
             fwrite(buffer,1,sizeof(buffer),fp);
@@ -74,10 +60,6 @@ int main(int argc, char *argv[])
       fclose (fp);
     }
 
-    /*
-    if (n < 0)
-         error("ERROR reading from socket");
-    printf("%s\n",buffer); */
     close(mysrv_sock);
     return 0;
 }
