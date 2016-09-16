@@ -50,8 +50,10 @@ int main(int argc, char *argv[])
       clilen = sizeof(cli_addr);
 
       client = accept(host_sock,(struct sockaddr *) &cli_addr,&clilen);
-      if (client < 0)
-           error("ERROR on accept");
+      if (client < 0){
+        printf("ERROR occured accepting client connection\n");
+        continue;
+      }
 
       printf("A client has connected\n");
 
@@ -60,27 +62,18 @@ int main(int argc, char *argv[])
         close(client);
         continue;
       }
-      // {
-      //
-      //   memcpy(url_req,h_buffer,sizeof(h_buffer));
-      //
-      // }
 
       printf("Checkpoint 1 Passed %d\n", h);
 
-      printf("something\n");
   /****** configutation for socket connection to web server ******/
 
       my_portno = 80; //original code
       mysrv_sock = socket(AF_INET, SOCK_STREAM, 0);
-      if (mysrv_sock< 0)
-          error("ERROR opening socket");
-
-    // websrv = gethostbyname(argv[1]); //original code
-    //   if (websrv == NULL) {
-    //       fprintf(stderr,"ERROR, no such host\n");
-    //       exit(0);
-    //   }
+      if (mysrv_sock< 0){
+        printf("ERROR occured creating web server socket\n");
+        close(mysrv_sock);
+        continue;
+      }
 
       for(i = 0; i < strlen(h_buffer); i++){
         if(h_buffer[i] == '/'){
@@ -90,21 +83,22 @@ int main(int argc, char *argv[])
         }
       }
 
-      printf("The host is %s \n", host);
+      //printf("The host is %s \n", host);
 
       for(i; i<strlen(h_buffer); i++){
         strcat(h_path,&h_buffer[i]);
         break;
       }
 
-      printf("The path is %s\n",h_path);
+      //printf("The path is %s\n",h_path);
 
       printf("Checkpoint 2 Passed\n");
 
-      websrv = gethostbyname(host); //-------> getting stuck here, websrv is still NULL
+      websrv = gethostbyname(host);
          if (websrv == NULL) {
-             fprintf(stderr,"ERROR, no such host\n");
-             exit(0);
+           printf("ERROR occured retrieiving host name from client\n");
+           close(client);
+           continue;
       }
 
       bzero((char *) &websrv_addr, sizeof(websrv_addr));
@@ -113,8 +107,11 @@ int main(int argc, char *argv[])
            (char *)&websrv_addr.sin_addr.s_addr,
            websrv->h_length);
       websrv_addr.sin_port = htons(my_portno);
-      if(connect(mysrv_sock,(struct sockaddr *) &websrv_addr,sizeof(websrv_addr)) < 0)
-          error("ERROR connecting");
+      if(connect(mysrv_sock,(struct sockaddr *) &websrv_addr,sizeof(websrv_addr)) < 0){
+        printf("ERROR occured connecting to web server\n");
+        close(mysrv_sock);
+        continue;
+      }
 
       //n = write(mysrv_sock,"GET / HTTP/1.1 \r\n",strlen("GET / HTTP/1.1 \r\n"));
 
@@ -123,8 +120,12 @@ int main(int argc, char *argv[])
 
       n = write(mysrv_sock,url_req,strlen(url_req));
 
-      if(n < 0)
-           error("ERROR writing to socket"); //change this to format of error checking on lines 57-60
+      if(n < 0){
+        printf("ERROR occured writing to client\n");
+        close(client);
+        continue;
+      }
+
       bzero(buffer,sizeof(buffer));
 
       printf("Checkpoint 3 Passed\n");
@@ -139,7 +140,6 @@ int main(int argc, char *argv[])
         while((n = read(mysrv_sock,buffer,sizeof(buffer))) != 0){
           // printf("Number of bytes read: %d\n",n);
 
-
           //check bytes in buffer for "\r\n\r\n" sequence
           numWrite = fwrite(buffer,1,sizeof(buffer),fp);
           //may need to change buffer to exact memory location of where data starts
@@ -147,16 +147,15 @@ int main(int argc, char *argv[])
 
         }
 
-
         fclose(fp);
-
-        sprintf(response,"Successful write to file of %d bytes\n",numWrite);
-
-        write(client,response,strlen(response));
-
-        close(client);
-
       }
+
+      p = sprintf(response,"Successful write to file of %d bytes\n",numWrite);
+
+      n = write(client,response,strlen(response));
+
+      close(client);
+
       close(mysrv_sock);
     }
     return 0;
